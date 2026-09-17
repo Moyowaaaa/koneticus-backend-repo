@@ -1,140 +1,159 @@
-# Koneticus Backend
+# Kollabs Backend
 
-This repository contains the backend code for Koneticus, a web development project. The backend is structured using Node.js and TypeScript, and is designed to be modular, scalable, and maintainable.
+REST API for **Kollabs** (also branded as Koneticus) — a collaboration platform for creators. Users post ideas, search for people and projects, send collaboration requests, chat, and get realtime notifications.
 
-## Table of Contents
+The server is Express + TypeScript, MongoDB (Mongoose), Redis cache, Cloudinary uploads, and Socket.IO on the same origin.
 
-- [Project Overview](#project-overview)
-- [Directory Structure](#directory-structure)
-- [Setup & Installation](#setup--installation)
-- [Scripts](#scripts)
-- [Configuration](#configuration)
-- [Logging](#logging)
-- [Database](#database)
-- [Error Handling](#error-handling)
-- [Cloudinary Integration](#cloudinary-integration)
-- [Development Workflow](#development-workflow)
-- [Contributing](#contributing)
-- [License](#license)
+Live API: [https://kollabs-backend-repo.onrender.com](https://kollabs-backend-repo.onrender.com)  
+Swagger: [https://kollabs-backend-repo.onrender.com/api-docs](https://kollabs-backend-repo.onrender.com/api-docs)
 
 ---
 
-## Project Overview
+## Stack
 
-Koneticus Backend provides RESTful APIs and core business logic for the Koneticus platform. It is built with TypeScript for type safety and maintainability, and uses Express.js for HTTP server functionality.
+| Layer | Tech |
+| --- | --- |
+| Runtime | Node.js, TypeScript |
+| HTTP | Express 5 |
+| Database | MongoDB via Mongoose |
+| Cache | Redis (IoRedis), optional |
+| Auth | JWT cookie (`authToken`) + Bearer token |
+| Realtime | Socket.IO (`chat:message`, `notification:new`) |
+| Files | Multer + Cloudinary (images and raw docs) |
+| Email | Resend + EJS templates |
+| Docs | Swagger UI at `/api-docs` |
 
-## Directory Structure
+---
 
-```
-backend/
-├── nodemon.json           # Nodemon configuration for development
-├── package.json           # Project metadata and scripts
-├── tsconfig.json          # TypeScript configuration
-├── logs/                  # Application logs
-├── src/
-│   ├── server.ts          # Entry point for the server
-│   ├── db/
-│   │   └── db.ts          # Database connection and setup
-│   ├── interfaces/
-│   │   └── error.interface.ts # Error interface definitions
-│   ├── lib/
-│   │   └── log/
-│   │       ├── morgan.log.ts  # Morgan logging setup
-│   │       └── winston.log.ts # Winston logging setup
-│   ├── middleware/
-│   │   └── ErrorLogger.ts     # Error logging middleware
-│   ├── models/
-│   │   └── error.model.ts     # Error model definitions
-│   ├── modules/               # Business logic modules (expandable)
-│   ├── routes/                # API route definitions
-│   ├── utils/
-│   │   └── cloudinary.ts      # Cloudinary utility functions
+## Local setup
+
+```bash
+git clone https://github.com/Moyowaaaa/Kollabs-backend-repo.git
+cd Kollabs-backend-repo
+pnpm install   # or npm install
 ```
 
-### Key Folders
+Create a `.env` in the repo root (see [Environment](#environment)). Then:
 
-- **src/**: Main source code for the backend.
-- **db/**: Database connection and configuration.
-- **interfaces/**: TypeScript interfaces for type safety.
-- **lib/log/**: Logging utilities using Morgan and Winston.
-- **middleware/**: Custom Express middleware (e.g., error logging).
-- **models/**: Data models and schemas.
-- **modules/**: Core business logic modules (expandable).
-- **routes/**: API route handlers.
-- **utils/**: Utility functions (e.g., Cloudinary integration).
-- **logs/**: Stores application logs.
+```bash
+pnpm dev       # nodemon + ts-node, default PORT 8081 (local often uses 4000)
+pnpm build     # tsc → dist/
+pnpm start     # node dist/server.js
+```
 
-## Setup & Installation
+Other scripts: `pnpm lint`, `pnpm lint:fix`.
 
-1. **Clone the repository:**
-   ```powershell
-   git clone https://github.com/Moyowaaaa/Kollabs-backend-repo.git
-   cd backend
-   ```
-2. **Install dependencies:**
-   ```powershell
-   npm install
-   ```
-3. **Configure environment variables:**
+---
 
-   - Create a `.env` file in the root directory and add necessary environment variables (e.g., database URI, Cloudinary credentials).
+## Environment
 
-4. **Run the development server:**
-   ```powershell
-   npm run dev
-   ```
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `PORT` | No | Default `8081` |
+| `NODE_ENV` | No | `production` uses `MONGO_URI_PROD` |
+| `MONGO_URI` | Yes (dev) | Development MongoDB URI |
+| `MONGO_URI_PROD` | Yes (prod) | Production MongoDB URI |
+| `SECRET` | Yes | JWT signing secret |
+| `CLOUDINARY_CLOUD_NAME` | Yes | Uploads |
+| `CLOUDINARY_API_KEY` | Yes | |
+| `CLOUDINARY_API_SECRET` | Yes | |
+| `RESEND_API_KEY` | Yes | Transactional email |
+| `EMAIL_FROM` | No | Default Resend onboarding address |
+| `FRONTEND_URL` | No | Links in emails; default `http://localhost:3000` |
+| `REDIS_URL` | No | Default `redis://localhost:6379` |
+| `CORS_ORIGINS` | No | Extra origins, comma-separated |
 
-## Scripts
+Default CORS origins include localhost:3000/3001, koneticus.com, and `https://area-52.netlify.app`.
 
-- `npm run dev`: Starts the server with Nodemon for hot-reloading.
-- `npm start`: Starts the server in production mode.
-- `npm run build`: Compiles TypeScript to JavaScript.
+---
 
-## Configuration
+## API
 
-- **nodemon.json**: Configures Nodemon for development auto-reloading.
-- **tsconfig.json**: TypeScript compiler options.
-- **package.json**: Project dependencies and scripts.
+Base path: **`/v1/api`**. Auth is cookie `authToken` and/or `Authorization: Bearer`.
+
+| Prefix | Module |
+| --- | --- |
+| `/` | Waitlist |
+| `/auth` | Sign up/in/out, email verify, password reset |
+| `/user` | Profile (`/me`, updates, photo, CV) |
+| `/projects` | CRUD, status pipeline, search, collaborators |
+| `/collaboration-requests` | Create, list mine, accept/reject |
+| `/feed` | Chronological and trending feeds |
+| `/notifications` | Inbox, unread count, mark read |
+| `/chat` | DMs, groups, Kollaborations, messages, polls, attachments |
+| `/search` | Federated people + projects (`q`, optional `role` / `skill` / `status`) |
+
+Health: `GET /`  
+Docs: `GET /api-docs`
+
+### Project status
+
+`draft` → `seeking_collaborators` → `ongoing` → `completed`  
+(legacy `pending` is treated as seeking collaborators)
+
+Collaboration requests are only accepted while a project is seeking collaborators.
+
+### Search
+
+`GET /v1/api/search?q=` (min 2 characters, or filters only).
+
+- Keyword uses Mongo `$text` on names, bios, titles, descriptions, roles.
+- Typing a role matches user `roles` and project `requiredRoles`.
+- Phrases like `ongoing`, `draft`, `completed`, `seeking collaborators` match project status.
+- Optional query params: `role`, `skill`, `status`, `limit`.
+
+---
+
+## Realtime (Socket.IO)
+
+Same origin as the HTTP server (`/socket.io`). Authenticate with cookie `authToken` or handshake `auth.token`.
+
+| Event | Direction | Purpose |
+| --- | --- | --- |
+| `conversation:join` / `leave` | client → server | Join room `conversation:{id}` |
+| `chat:message` | server → room | After a message is persisted |
+| `notification:new` | server → `user:{userId}` | After a notification is created |
+
+---
+
+## Modules
+
+Each domain lives under `src/modules/<name>/` with routes, controller, model, interfaces, and Swagger:
+
+`auth` · `user` · `projects` · `collaboration-requests` · `feed` · `notifications` · `chat` · `search` · `waitlist`
+
+Entry point: `src/server.ts`.
+
+---
+
+## Auth
+
+- Sign-in sets an HttpOnly cookie (`authToken`, SameSite=Lax).
+- Sign-up returns a JWT; browsers should also send Bearer for cross-site (e.g. Netlify → Render).
+- Protected routes use `verifyAuthentication`.
+
+---
+
+## Uploads
+
+Multer → Cloudinary.
+
+- Profile photo / CV on sign-up and profile update
+- Project media
+- Collaboration-request media
+- Chat attachments: images plus PDF / DOC / DOCX (non-images as Cloudinary `raw`)
+- Optional group avatar
+
+---
 
 ## Logging
 
-- **Morgan**: HTTP request logging (see `lib/log/morgan.log.ts`).
-- **Winston**: General application logging (see `lib/log/winston.log.ts`).
-- **logs/**: Directory for log files.
+Winston writes to `logs/all-logs.log` (plus console). Morgan logs HTTP.
 
-## Database
-
-- Database connection and setup are managed in `src/db/db.ts`.
-- Supports environment-based configuration via `.env`.
-
-## Error Handling
-
-- Error interfaces: `src/interfaces/error.interface.ts`
-- Error models: `src/models/error.model.ts`
-- Error logging middleware: `src/middleware/ErrorLogger.ts`
-
-## Cloudinary Integration
-
-- Utility functions for Cloudinary are in `src/utils/cloudinary.ts`.
-- Used for image and asset management.
-
-## Development Workflow
-
-- Use feature branches for new features and bug fixes.
-- Pull requests should be submitted to the `dev` branch.
-- CI/CD is configured via GitHub Actions (`.github/workflows/ci.yml`).
-
-## Contributing
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/your-feature`).
-3. Commit your changes.
-4. Push to your branch and open a pull request.
-
-## License
-
-This project is licensed under the MIT License.
+Log files are **gitignored**. Do not commit `logs/all-logs.log`.
 
 ---
 
-For questions or support, please open an issue or contact the repository owner.
+## License
+
+ISC (see `package.json`).
