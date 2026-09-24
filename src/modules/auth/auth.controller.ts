@@ -140,7 +140,12 @@ export const signUpUser = async (req: Request, res: Response) => {
     await session.commitTransaction();
 
     // Send verification email (after transaction commits)
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl =
+      process.env.NODE_ENV === "production"
+        ? process.env.PRODUCTIONURL
+        : process.env.NODE_ENV === "staging"
+          ? process.env.BETAURL
+          : process.env.LOCALHOST3K || "http://localhost:3000";
     const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
 
     try {
