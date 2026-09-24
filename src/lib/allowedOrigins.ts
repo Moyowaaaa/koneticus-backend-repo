@@ -1,10 +1,13 @@
 const DEFAULT_ORIGINS = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://www.koneticus.com",
-  "https://koneticus.com",
-  "https://area-52.netlify.app",
+  process.env.LOCALHOST3K   || '',
+  process.env.LOCALHOST3K1  || '',
+  process.env.PRODUCTIONURL || '',
+  process.env.NETLIFYURL    || '',
+  process.env.BETAURL       || '',
+  process.env.WAITLISTURL      || '',
 ];
+
+
 
 const extraOrigins =
   process.env.CORS_ORIGINS?.split(",")
