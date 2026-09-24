@@ -23,6 +23,8 @@ interface MulterFiles {
   cv?: Express.Multer.File[];
 }
 
+
+
 export const signUpUser = async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -279,7 +281,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+ const frontendUrl =
+      process.env.NODE_ENV === "production"
+        ? process.env.PRODUCTIONURL
+        : process.env.NODE_ENV === "staging"
+          ? process.env.BETAURL
+          : process.env.LOCALHOST3K || "http://localhost:3000";
     const resetUrl = `${frontendUrl}/auth/reset-password/${resetToken}`;
 
     await sendPasswordResetEmail(email, resetUrl);
@@ -448,7 +455,14 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
     await user.save();
 
     // Send verification email
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+ const frontendUrl =
+      process.env.NODE_ENV === "production"
+        ? process.env.PRODUCTIONURL
+        : process.env.NODE_ENV === "staging"
+          ? process.env.BETAURL
+          : process.env.LOCALHOST3K || "http://localhost:3000";
+
+          
     const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
 
     await sendVerificationEmail(email, verificationUrl);
