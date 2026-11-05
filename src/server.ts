@@ -67,6 +67,7 @@ app.get("/", (req: Request, res: Response) => {
 
 console.log("Starting server...");
 
+app.set("trust proxy", 1);
 //v1 routes
 app.use("/v1/api", waitlistRoutes);
 app.use("/v1/api/auth", authRoutes);

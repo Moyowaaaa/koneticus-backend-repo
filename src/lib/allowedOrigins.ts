@@ -5,6 +5,7 @@ const DEFAULT_ORIGINS = [
   process.env.NETLIFYURL    || '',
   process.env.BETAURL       || '',
   process.env.WAITLISTURL      || '',
+  "http://192.168.100.5:3000"
 ];
 
 
